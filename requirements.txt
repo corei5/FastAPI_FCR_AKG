@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pytest
+requests
+pandas
+pickle
+numpy
+sentence_transformers
+json
+
