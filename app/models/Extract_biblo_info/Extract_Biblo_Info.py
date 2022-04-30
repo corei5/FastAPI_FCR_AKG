@@ -1,6 +1,8 @@
 # Parse HTML table and import to Pandas DataFrame
 import pandas as pd
 import json
+from fastapi import FastAPI, HTTPException, Request, status
+
 
 def extract_biblo_info(full_url):
     df_list = []
@@ -12,7 +14,11 @@ def extract_biblo_info(full_url):
         result = df_table.to_json(orient="index")
         parsed = json.loads(result)
         return_json = json.dumps(parsed, indent=4)
-    except ValueError as e:
-        print(e)
+        return return_json
 
-    return return_json
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail="Not able to extract biblo info")
+
+
