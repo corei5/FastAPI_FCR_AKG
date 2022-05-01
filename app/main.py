@@ -1,19 +1,12 @@
+import json
 import logging.config
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
-# Transformers ROBERTA-large
-from sentence_transformers import SentenceTransformer, util
-
-model = SentenceTransformer('stsb-roberta-large')
-# Transformers BERT
-model_bert = SentenceTransformer('bert-base-nli-mean-tokens')
-
-from util import transformers_claim_for_ROBERTA_large, transformers_claim_for_BERT, \
-    TfidfVectorizer_with_DBpedia_spotlight, \
-    CountVectorizer_with_DBpedia_spotlight, corpus_embeddings_ROBERTA_large, corpus_embeddings_BERT
+from util import Model, get_model
 
 app = FastAPI()
 
@@ -26,6 +19,23 @@ app = FastAPI()
 
 # Create a custom logger
 logger = logging.getLogger(__name__)
+
+
+class RecommendationRequest(BaseModel):
+    top_k: int
+    search_terms: str
+
+
+class EmbeddingModel(BaseModel):
+    parameter: bool
+
+
+## Need to work on it
+class RecommendationResponse(BaseModel):
+    text: str
+    research_paper: str
+    author_name: str
+    similarity_score: float
 
 
 @app.exception_handler(RequestValidationError)
@@ -46,49 +56,50 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-@app.get('/api/v1/Transformers/embeddings_ROBERTA/{parameter}')
+@app.get("/api/v1/Transformers/embeddings_ROBERTA/{parameter}", response_model=EmbeddingModel)
 # Claim embeddings using ROBERTA large transformer
-async def corpus_embeddings_ROBERTA(parameter):
-    response = jsonable_encoder(parameter)
-    json_compatible_item_data = corpus_embeddings_ROBERTA_large(response)
+async def corpus_embeddings_ROBERTA(request: EmbeddingModel, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.parameter)
+    json_compatible_item_data = model.corpus_embeddings_ROBERTA_large(response)
     return JSONResponse(content=json_compatible_item_data)
 
 
-@app.get('/api/v1/Transformers/embeddings_BERT/{parameter}')
+@app.get("/api/v1/Transformers/embeddings_BERT/{parameter}", response_model=EmbeddingModel)
 # Claim embeddings using BERT transformer
-async def corpus_embeddings_Transformers_BERT(parameter):
-    response = jsonable_encoder(parameter)
-    json_compatible_item_data = corpus_embeddings_BERT(response)
+async def corpus_embeddings_Transformers_BERT(request: EmbeddingModel, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.parameter)
+    json_compatible_item_data = model.corpus_embeddings_BERT(response)
     return JSONResponse(content=json_compatible_item_data)
 
 
-@app.get("/api/v1/Transformers/ROBERTA/{top_k}/{search_terms}")
-async def claim_for_ROBERTA_large(top_k: int, search_terms):
-    response = jsonable_encoder(search_terms)
-    json_compatible_item_data = transformers_claim_for_ROBERTA_large(top_k, response)
+@app.post("/api/v1/Transformers/ROBERTA/{top_k}/{search_terms}", response_model=RecommendationResponse)
+async def claim_for_ROBERTA(request: RecommendationRequest, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.transformers_claim_for_ROBERTA_large(request.top_k, response)
+    # print(json_compatible_item_data)
+    return JSONResponse(content=json.dumps(json_compatible_item_data[0]))
+
+
+@app.post("/api/v1/Transformers/BERT/{top_k}/{search_terms}", response_model=RecommendationResponse)
+async def calim_for_Transformers_BERT(request: RecommendationRequest, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.transformers_claim_for_BERT(request.top_k, response)
     return JSONResponse(content=json_compatible_item_data)
 
 
-@app.get("/api/v1/Transformers/BERT/{top_k}/{search_terms}")
-async def calim_for_Transformers_BERT(top_k: int, search_terms):
-    response = jsonable_encoder(search_terms)
-    json_compatible_item_data = transformers_claim_for_BERT(top_k, response)
+@app.post('/api/v1/Vectorized/Tfidf/{top_k}/{search_terms}', response_model=RecommendationResponse)
+# API for return N selected claims for a string (that is provided by the fact-checkers) using TfidfVectorizer
+async def Tfidf_with_DBpedia_spotlight(request: RecommendationRequest, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.TfidfVectorizer_with_DBpedia_spotlight(request.top_k, response)
     return JSONResponse(content=json_compatible_item_data)
 
 
-@app.get('/api/v1/Vectorized/Tfidf/{top_k}/{search_terms}')
-# API for return N selected claims for a string (that is provided by the fact checkers) using TfidfVectorizer
-async def Tfidf_with_DBpedia_spotlight(top_k: int, search_terms):
-    response = jsonable_encoder(search_terms)
-    json_compatible_item_data = TfidfVectorizer_with_DBpedia_spotlight(top_k, response)
-    return JSONResponse(content=json_compatible_item_data)
-
-
-@app.get('/api/v1/Vectorized/Count/{top_k}/{search_terms}')
+@app.post('/api/v1/Vectorized/Count/{top_k}/{search_terms}', response_model=RecommendationResponse)
 # API for return N selected claims for a string (that is provided by the fact checkers) using CountVectorizer
-async def Count_with_DBpedia_spotlight(top_k: int, search_terms):
-    response = jsonable_encoder(search_terms)
-    json_compatible_item_data = CountVectorizer_with_DBpedia_spotlight(top_k, response)
+async def Count_with_DBpedia_spotlight(request: RecommendationRequest, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.CountVectorizer_with_DBpedia_spotlight(request.top_k, response)
     return JSONResponse(content=json_compatible_item_data)
 
 
