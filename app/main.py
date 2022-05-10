@@ -26,6 +26,11 @@ class RecommendationRequest(BaseModel):
     search_terms: str
 
 
+class RecommendationStore(BaseModel):
+    threshold: float
+    search_terms: str
+
+
 class EmbeddingModel(BaseModel):
     parameter: bool
 
@@ -84,11 +89,25 @@ async def claim_for_ROBERTA(request: RecommendationRequest, model: Model = Depen
     return JSONResponse(content=json.dumps(json_compatible_item_data[0]))
 
 
+@app.post("/api/v1/Transformers/ROBERTA/store_claim/{threshold}/{search_terms}", response_model=RecommendationResponse)
+async def store_claim_for_ROBERTA(request: RecommendationStore, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.store_transformers_claim_for_ROBERTA_large(request.threshold, response)
+    return JSONResponse(content="Similarity store in a csv file and store in the dump folder")
+
+
 @app.post("/api/v1/Transformers/BERT/{top_k}/{search_terms}", response_model=RecommendationResponse)
 async def calim_for_Transformers_BERT(request: RecommendationRequest, model: Model = Depends(get_model)):
     response = jsonable_encoder(request.search_terms)
     json_compatible_item_data = model.transformers_claim_for_BERT(request.top_k, response)
     return JSONResponse(content=json_compatible_item_data)
+
+
+@app.post("/api/v1/Transformers/BERT/store_claim/{threshold}/{search_terms}", response_model=RecommendationResponse)
+async def store_claim_for_BERT(request: RecommendationStore, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.store_transformers_claim_for_BERT(request.threshold, response)
+    return JSONResponse(content="Similarity store in a csv file and store in the dump folder")
 
 
 @app.post('/api/v1/Vectorized/Tfidf_DBPedia/{top_k}/{search_terms}', response_model=RecommendationResponse)
@@ -131,6 +150,9 @@ async def Count_with_ConceptNet(request: RecommendationRequest, model: Model = D
     response = jsonable_encoder(request.search_terms)
     json_compatible_item_data = model.CountVectorizer_with_conceptnet_entities(request.top_k, response)
     return JSONResponse(content=json_compatible_item_data)
+
+
+# How many claims are found, on average, for certain similarity thresholds
 
 
 @app.get("/api/v1/test_api")

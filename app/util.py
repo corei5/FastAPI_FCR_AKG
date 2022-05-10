@@ -10,7 +10,7 @@ model = SentenceTransformer('stsb-roberta-large')
 # Transformers BERT
 model_bert = SentenceTransformer('bert-base-nli-mean-tokens')
 
-from models.Selected_Claim_transformers import selected_claim
+from models.Selected_Claim_transformers import selected_claim,store_selected_claim
 from models.Entity_extraction.dbpedia_spotlight_entities import dbp
 from models.Entity_extraction.ConceptNet import conceptNetExpansion
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -66,12 +66,31 @@ class Model:
             cos_scores = util.pytorch_cos_sim(sentence_embedding, corpus_embeddings)[0]
             # top_k results to return
             # Sort the results in decreasing order and get the first top_k
-            list_of_selected_claim = selected_claim(cos_scores, claim_df, top_k)
-            return list_of_selected_claim
+            list_of_selected_claim_biblo = selected_claim(cos_scores, claim_df, top_k)
+            return list_of_selected_claim_biblo
         except ValueError:
             raise HTTPException(
                 status_code=422,
                 detail="Invalid input. Please enter a positive integer and search terms")
+
+    def store_transformers_claim_for_ROBERTA_large(self, threshold: float, search_terms):
+        try:
+            file_name = 'Dataset/pickle/Transformer_similarity_embedding_model_ROBERTA_large.pickle'
+            claim_file_path = 'Dataset/cord19_ClaimKG_With_Conceptnet_Entities_For_DbpediaSpotlight.csv'
+            folder_path = "dump/ROBERTA/"
+            with open(file_name, 'rb') as pkl:
+                corpus_embeddings = pickle.load(pkl)
+            claim_df = pd.read_csv(claim_file_path)
+            # encode sentence to get sentence embeddings
+            sentence_embedding = model.encode(search_terms, convert_to_tensor=True)
+            # compute similarity scores of the sentence with the corpus
+            cos_scores = util.pytorch_cos_sim(sentence_embedding, corpus_embeddings)[0]
+            store_selected_claim_ = store_selected_claim(cos_scores, claim_df, threshold, search_terms, folder_path)
+            return store_selected_claim_
+        except ValueError:
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid input. Please enter a positive threshold and search terms")
 
     def transformers_claim_for_BERT(self, top_k: int, search_terms):
         try:
@@ -92,6 +111,25 @@ class Model:
             raise HTTPException(
                 status_code=422,
                 detail="Invalid input. Please enter a positive integer and search terms")
+
+    def store_transformers_claim_for_BERT(self, threshold: float, search_terms):
+        try:
+            file_name = 'Dataset/pickle/Transformer_similarity_embedding_model_Transformers_BERT.pickle'
+            claim_file_path = 'Dataset/cord19_ClaimKG_With_Conceptnet_Entities_For_DbpediaSpotlight.csv'
+            folder_path = "dump/BERT/"
+            with open(file_name, 'rb') as pkl:
+                corpus_embeddings = pickle.load(pkl)
+            claim_df = pd.read_csv(claim_file_path)
+            # encode sentence to get sentence embeddings
+            sentence_embedding = model_bert.encode(search_terms, convert_to_tensor=True)
+            # compute similarity scores of the sentence with the corpus
+            cos_scores = util.pytorch_cos_sim(sentence_embedding, corpus_embeddings)[0]
+            store_selected_claim_ = store_selected_claim(cos_scores, claim_df, threshold, search_terms, folder_path)
+            return store_selected_claim_
+        except ValueError:
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid input. Please enter a positive threshold and search terms")
 
     def TfidfVectorizer_with_DBpedia_spotlight(self, top_k: int, search_terms):
         min_df = 32
