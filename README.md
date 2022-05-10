@@ -24,6 +24,9 @@ Open your Linux terminal inside the APIs folder.
 ## Fastapi swagger
 
 *** add image for the example input and output ****
+![Screenshot from 2022-05-10 10-12-23](https://user-images.githubusercontent.com/11629650/167580987-ee27bbaf-25f3-42af-9b4f-3fffa0e19cb7.png)
+
+
 
 
 ## Dataset: 
