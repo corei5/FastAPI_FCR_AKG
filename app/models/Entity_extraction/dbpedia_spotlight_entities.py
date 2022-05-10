@@ -2,9 +2,6 @@ import numpy as np
 import requests
 import json
 
-
-
-
 def annotate_text(text):
     base_url = "http://api.dbpedia-spotlight.org/en/annotate"
     #base_url = "Enter the URL of your DBPedia server"

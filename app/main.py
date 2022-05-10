@@ -30,6 +30,10 @@ class EmbeddingModel(BaseModel):
     parameter: bool
 
 
+class ConceptNetEntityExtraction(BaseModel):
+    parameter: bool
+
+
 ## Need to work on it
 class RecommendationResponse(BaseModel):
     text: str
@@ -87,7 +91,7 @@ async def calim_for_Transformers_BERT(request: RecommendationRequest, model: Mod
     return JSONResponse(content=json_compatible_item_data)
 
 
-@app.post('/api/v1/Vectorized/Tfidf/{top_k}/{search_terms}', response_model=RecommendationResponse)
+@app.post('/api/v1/Vectorized/Tfidf_DBPedia/{top_k}/{search_terms}', response_model=RecommendationResponse)
 # API for return N selected claims for a string (that is provided by the fact-checkers) using TfidfVectorizer
 async def Tfidf_with_DBpedia_spotlight(request: RecommendationRequest, model: Model = Depends(get_model)):
     response = jsonable_encoder(request.search_terms)
@@ -95,11 +99,37 @@ async def Tfidf_with_DBpedia_spotlight(request: RecommendationRequest, model: Mo
     return JSONResponse(content=json_compatible_item_data)
 
 
-@app.post('/api/v1/Vectorized/Count/{top_k}/{search_terms}', response_model=RecommendationResponse)
+@app.post('/api/v1/Vectorized/Count_DBPedia/{top_k}/{search_terms}')
 # API for return N selected claims for a string (that is provided by the fact checkers) using CountVectorizer
 async def Count_with_DBpedia_spotlight(request: RecommendationRequest, model: Model = Depends(get_model)):
     response = jsonable_encoder(request.search_terms)
     json_compatible_item_data = model.CountVectorizer_with_DBpedia_spotlight(request.top_k, response)
+    return JSONResponse(content=json_compatible_item_data)
+
+
+# @app.post('/api/v1/Extract_conceptnet_entities/{parameter}', response_model=EmbeddingModel)
+# async def Extract_conceptnet_entities_with_DBpedia_spotlight(request: EmbeddingModel, model: Model = Depends(get_model)):
+#     response = jsonable_encoder(request.parameter)
+#     print(response)
+#     json_compatible_item_data = model.Extract_conceptnet_entities_with_DBpedia_spotlight(response)
+#     return JSONResponse(content=json_compatible_item_data)
+
+
+# from models.Entity_extraction.dbpedia_spotlight_entities import dbp
+# import pandas as pd
+
+
+@app.post('/api/v1/Vectorized/Tfidf_conceptnet/{top_k}/{search_terms}', response_model=RecommendationResponse)
+async def Tfidf_with_ConceptNet(request: RecommendationRequest, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.TfidfVectorizer_with_conceptnet_entities(request.top_k, response)
+    return JSONResponse(content=json_compatible_item_data)
+
+
+@app.post('/api/v1/Vectorized/Count_conceptnet/{top_k}/{search_terms}', response_model=RecommendationResponse)
+async def Count_with_ConceptNet(request: RecommendationRequest, model: Model = Depends(get_model)):
+    response = jsonable_encoder(request.search_terms)
+    json_compatible_item_data = model.CountVectorizer_with_conceptnet_entities(request.top_k, response)
     return JSONResponse(content=json_compatible_item_data)
 
 

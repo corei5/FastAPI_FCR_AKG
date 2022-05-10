@@ -2,9 +2,14 @@ import hashlib
 import json
 import requests
 import numpy as np
-from Data_preprocessing.Data_Clean import CheckLanguage, IsNotAscii, RemoveUnwantedCharacters
-from Data_preprocessing.Ngrams import ExtractNgrams, ExtractNgramsEntityList
+#from .Data_processing import CheckLanguage, IsNotAscii, RemoveUnwantedCharacters
+#from .Data_processing import ExtractNgrams, ExtractNgramsEntityList
 
+from ..Data_processing.CheckLanguage import isEnglish
+from ..Data_processing.IsNotAscii import is_not_ascii
+from ..Data_processing.RemoveUnwantedCharacters import remove_unwanted_characters
+from ..Data_processing.ExtractNgrams import ngrams,extract_ngrams
+from ..Data_processing.ExtractNgramsEntityList import extract_ngrams_entity_list
 
 def conceptNetExpansion(entitiesToExpand_str):
     debug = False
@@ -22,7 +27,7 @@ def conceptNetExpansion(entitiesToExpand_str):
             str_entity = entity.lower().rstrip().lstrip()
 
             if len(str_entity.split(" ")) > 1:
-                entityList = ExtractNgramsEntityList.extract_ngrams_entity_list(str_entity) + [str_entity]
+                entityList = extract_ngrams_entity_list(str_entity) + [str_entity]
             else:
                 entityList = [str_entity]
 
@@ -34,28 +39,39 @@ def conceptNetExpansion(entitiesToExpand_str):
                 try:
                     with open('cache/ConceptNet/' + filename + ".json", 'r') as cachefile:
                         obj = json.load(cachefile)
-                    #                         if debug:
-                    #                             print("Read from cache " + filename)
-                    #                         else:
-                    #                             print("c" + filename, end='')
+                        if debug:
+                            print("Read from cache " + filename)
+                        else:
+                            print("c" + filename, end='')
                 except IOError:
-                    url = 'http://api.conceptnet.io/c/en/' + internal_entity
+                    #url = 'http://api.conceptnet.io/c/en/' + internal_entity
+
+                    url = 'http://api.conceptnet.io/query?start=/c/en/'+ internal_entity
                     obj = requests.get(url).json()
-                    with open('cache/ConceptNet/' + filename + ".json", 'w') as outfile:
-                        json.dump(obj, outfile)
+                    # with open('cache/ConceptNet/' + filename + ".json", 'w') as outfile:
+                    #     json.dump(obj, outfile)
+
+
 
                 for edge in obj['edges']:
-                    entityLinkedAsStart = str(edge['start']['label'])
-                    entityLinkedAsEnd = str(edge['end']['label'])  # str(obj['edges'][i]['end']['label'])
-                    if CheckLanguage.isEnglish(entityLinkedAsStart):
-                        expandedEntities.add(entityLinkedAsStart)
-                    if CheckLanguage.isEnglish(entityLinkedAsEnd):
-                        expandedEntities.add(entityLinkedAsEnd)
+                    #print(str(edge['start']['language']))
+                    if edge['start']['language'] == 'en':
+                        entityLinkedAsStart = str(edge['start']['label'])
+                        entityLinkedAsEnd = str(edge['end']['label'])  # str(obj['edges'][i]['end']['label'])
+                        if isEnglish(entityLinkedAsStart):
+                            expandedEntities.add(entityLinkedAsStart)
+                        if isEnglish(entityLinkedAsEnd):
+                            expandedEntities.add(entityLinkedAsEnd)
 
             for entity in expandedEntities:
                 entityListAll.append(entity)
 
+        #print(entityListAll)
+        #return ','.join(entityListAll)
+        return entityListAll
+
     else:
         return np.nan
 
-        return ','.join(entityListAll)
+
+
